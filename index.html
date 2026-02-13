@@ -560,13 +560,11 @@
         const App = () => {
             const [started, setStarted] = useState(false);
             const [judges, setJudges] = useState([
-                { id: 1, name: "オーディエンス", vote: "令和ロマン" },
-                { id: 2, name: "教職員", vote: "ヤーレンズ" },
-                { id: 3, name: "サンド富澤", vote: "令和ロマン" },
-                { id: 4, name: "中川家礼二", vote: "さや香" },
-                { id: 5, name: "博多大吉", vote: "令和ロマン" },
-                { id: 6, name: "山田邦子", vote: "ヤーレンズ" },
-                { id: 7, name: "ともしげ", vote: "令和ロマン" },
+                { id: 1, name: "オーディエンス", vote: "〇〇〇〇" },
+                { id: 2, name: "教職員", vote: "✕✕✕✕" },
+                { id: 3, name: "審査委員１", vote: "△△△△" },
+                { id: 4, name: "審査委員２", vote: "☆☆☆☆" },
+                { id: 5, name: "審査委員３", vote: "〇〇〇〇" },
             ]);
             const [teamColorMap, setTeamColorMap] = useState({});
             const [revealedCount, setRevealedCount] = useState(0); 
@@ -695,5 +693,6 @@
     </script>
 </body>
 </html>
+
 
 
