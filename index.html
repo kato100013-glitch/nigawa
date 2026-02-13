@@ -599,11 +599,29 @@
                 }
             }, [isRolling, revealedCount, judges.length, handleReset]);
 
-            useEffect(() => {
-                if (!started) return;
-                const handleKeyDown = (e) => { if (e.key === 'Enter') { e.preventDefault(); handleNext(); } };
-                window.addEventListener('keydown', handleKeyDown); return () => window.removeEventListener('keydown', handleKeyDown);
-            }, [started, handleNext]);
+           useEffect(() => {
+    if (!started) return;
+    
+    // キーボード操作（Enter）
+    const handleKeyDown = (e) => { 
+        if (e.key === 'Enter') { e.preventDefault(); handleNext(); } 
+    };
+    
+    // タップ・クリック操作（画面全体）
+    const handleClick = (e) => {
+        // 設定画面などのボタンや入力欄をクリックしたときは反応しないようにする
+        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+        handleNext();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('click', handleClick); // 追加
+
+    return () => {
+        window.removeEventListener('keydown', handleKeyDown);
+        window.removeEventListener('click', handleClick); // 追加
+    };
+}, [started, handleNext]);
 
             if (!started) {
                 return (
@@ -672,3 +690,4 @@
     </script>
 </body>
 </html>
+
