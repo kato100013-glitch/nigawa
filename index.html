@@ -316,18 +316,23 @@
             overflow: hidden;
         }
 
-        .team-name-text {
+      .team-name-text {
             writing-mode: vertical-rl;
+            text-orientation: upright;
             font-family: 'M PLUS Rounded 1c', sans-serif;
             font-weight: 900;
             font-size: 2.8rem; 
             letter-spacing: 0.05em;
             white-space: nowrap; 
-            color: #555; /* 消灯時 */
+            color: #555;
             -webkit-text-stroke: 1px #333;
-            filter: none;
             transition: color 0.1s ease 0.4s, -webkit-text-stroke 0.1s ease 0.4s, filter 0.1s ease 0.4s;
-            transform-origin: center center;
+            
+            /* --- 中央配置を強制 --- */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
         }
         
         /* 点灯時 */
@@ -690,4 +695,5 @@
     </script>
 </body>
 </html>
+
 
