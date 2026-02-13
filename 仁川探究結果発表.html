@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M-1 Grand Prix Final Vote - Low Impact Sound</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel (for JSX) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@800;900&family=Noto+Sans+JP:wght@900&family=Shippori+Mincho:wght@800&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #050000;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; 
+            font-family: 'Noto Sans JP', serif;
+            color: white;
+            min-height: 100vh;
+        }
+
+        /* --- 柱のサイズ定義 (CSS変数で管理) --- */
+        :root {
+            /* モバイル用 */
+            --p-width: 90px;
+            --p-height: 420px; 
+            --p-depth: 90px;   
+            --p-trans-z: 45px; 
+        }
+        @media (min-width: 768px) {
+            :root {
+                /* PC/タブレット用 */
+                --p-width: 120px;
+                --p-height: 550px;
+                --p-depth: 120px;
+                --p-trans-z: 60px;
+            }
+        }
+
+        /* 背景レイヤー */
+        #bg-layer {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -2;
+            background-image: 
+                radial-gradient(circle at 50% 60%, rgba(50, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.98) 90%),
+                url("https://www.transparenttextures.com/patterns/dark-matter.png");
+            background-size: cover;
+        }
+
+        /* 火の粉キャンバス */
+        #fire-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1;
+            pointer-events: none;
+            mix-blend-mode: screen;
+        }
+
+        /* --- 3Dフリップ設定 --- */
+        .perspective-1000 {
+            perspective: 3000px;
+        }
+        
+        .flip-card-inner {
+            position: relative;
+            width: var(--p-width);
+            height: var(--p-height);
+            text-align: center;
+            transform-style: preserve-3d;
+            transform: rotateY(0deg);
+        }
+        
+        /* 強化された「はまる」アニメーション */
+        @keyframes flip-snap-3d {
+            0% { transform: rotateY(0deg) scale(1); }
+            40% { transform: rotateY(90deg) scale(1.4); } 
+            75% { transform: rotateY(190deg) scale(1.02); } 
+            100% { transform: rotateY(180deg) scale(1); }
+        }
+
+        .flip-card-inner.flipped {
+            animation: flip-snap-3d 0.8s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+        }
+        
+        /* 面の共通設定 */
+        .flip-card-face {
+            position: absolute;
+            width: var(--p-width);
+            height: var(--p-height);
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            transform-style: preserve-3d;
+        }
+
+        /* 正四角柱の配置 */
+        .flip-card-front { 
+            transform: rotateY(0deg) translateZ(var(--p-trans-z)); 
+        }
+        .flip-card-back { 
+            transform: rotateY(180deg) translateZ(var(--p-trans-z)); 
+        }
+
+        /* --- パネル側面（正四角柱の側面） --- */
+        .pillar-side {
+            position: absolute;
+            top: 0;
+            width: var(--p-depth);
+            height: var(--p-height);
+            background: linear-gradient(to bottom, #5c3a00, #2a1505);
+            border: 1px solid #754b18;
+            backface-visibility: visible;
+        }
+        
+        .side-right {
+            right: calc(var(--p-depth) / -2);
+            transform: rotateY(90deg);
+        }
+        
+        .side-left {
+            left: calc(var(--p-depth) / -2);
+            transform: rotateY(-90deg);
+        }
+
+        /* =========================================
+           直方体 (Box) 豪華フレーム CSS
+           ========================================= */
+
+        /* --- 王冠 (Crown) --- */
+        .crown-container {
+            width: 140%;
+            height: 80px;
+            position: relative;
+            transform: translateZ(20px); 
+            margin-bottom: -15px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            transform-style: preserve-3d;
+            filter: drop-shadow(0 15px 10px rgba(0,0,0,0.9));
+        }
+
+        .crown-body {
+            width: 100%;
+            height: 50px;
+            background: linear-gradient(to right, #754b18, #b88a44 20%, #f9f295 50%, #b88a44 80%, #754b18);
+            clip-path: polygon(0 0, 100% 0, 90% 100%, 10% 100%);
+            position: relative;
+            transform-style: preserve-3d;
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.5);
+            border: 1px solid #5c3a00;
+        }
+
+        /* 表面の宝石 */
+        .crown-gem-main {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%) translateZ(10px) rotate(45deg);
+            width: 36px;
+            height: 36px;
+            border-radius: 2px;
+            border: 2px solid #ffd700;
+            background: radial-gradient(circle at 30% 30%, #ff8888, #ff0000, #550000);
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.8);
+        }
+
+        /* 裏面の宝石 */
+        .back-gem {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            width: 36px;
+            height: 36px;
+            border-radius: 2px;
+            border: 2px solid #ffd700;
+            transform: translateX(-50%) translateZ(10px) rotate(45deg);
+            background: #333; /* 消灯時 */
+            box-shadow: none;
+            transition: all 0.1s ease 0.4s;
+        }
+        .flip-card-inner.flipped .back-gem {
+            background: radial-gradient(circle at 30% 30%, #fff, var(--gem-color), #000);
+            border-color: white;
+            box-shadow: 0 0 15px var(--gem-color);
+        }
+
+        .crown-filigree {
+            position: absolute;
+            top: -35px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 4px;
+            transform: translateZ(5px);
+        }
+        .crown-wing {
+            font-size: 48px;
+            color: #ffd700;
+            text-shadow: 0 2px 2px rgba(0,0,0,1);
+            transform: scaleY(1.2);
+        }
+
+        /* --- 柱本体 --- */
+        .pillar-structure {
+            position: relative;
+            width: 100%;
+            flex-grow: 1; 
+            display: flex;
+            justify-content: center;
+            transform-style: preserve-3d;
+        }
+
+        .black-board {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: translateZ(-5px); 
+            background: #111;
+            border: 1px solid #333;
+            box-shadow: inset 0 0 50px rgba(0,0,0,1);
+            border-top: 8px solid #444;
+            border-bottom: 8px solid #444;
+        }
+        .black-board::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url("https://www.transparenttextures.com/patterns/black-felt.png");
+            opacity: 0.5;
+        }
+
+        /* 柱の角 */
+        .side-column {
+            position: absolute;
+            top: 0; bottom: 0;
+            width: 15px;
+            background: linear-gradient(to right, #3d230b, #ffd700 40%, #ffec8b 50%, #8b4500 60%, #3d230b);
+            transform: translateZ(10px); 
+            box-shadow: 5px 0 10px rgba(0,0,0,0.8);
+            border: 1px solid #5c3a00;
+        }
+        .col-left { left: -8px; }
+        .col-right { right: -8px; }
+
+        /* --- 土台 --- */
+        .pillar-base {
+            width: 150%;
+            height: 50px;
+            margin-top: -10px;
+            position: relative;
+            transform: translateZ(20px); 
+            filter: drop-shadow(0 20px 20px rgba(0,0,0,0.9));
+            transform-style: preserve-3d;
+        }
+        
+        .wood-block {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, #3d230b, #8b5a2b 20%, #a07040 50%, #8b5a2b 80%, #3d230b);
+            clip-path: polygon(10% 0, 90% 0, 100% 100%, 0% 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
+            border-bottom: 2px solid #2a1a0a;
+        }
+        
+        .base-plate {
+            width: 70%;
+            height: 50%;
+            background: linear-gradient(to bottom, #ffd700, #b8860b);
+            border: 1px solid #5c3a00;
+            transform: translateZ(2px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+
+        /* --- テキストスタイル --- */
+        .judge-name {
+            writing-mode: vertical-rl;
+            font-family: 'Noto Sans JP', sans-serif;
+            font-weight: 900;
+            color: white;
+            font-size: 2.0rem;
+            letter-spacing: 0.1em;
+            transform: translateZ(5px);
+            text-shadow: 0 2px 4px rgba(0,0,0,1);
+        }
+        
+        /* コンビ名（裏面） - 自動調整用コンテナ */
+        .team-name-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 0;
+            overflow: hidden;
+        }
+
+        .team-name-text {
+            writing-mode: vertical-rl;
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            font-weight: 900;
+            font-size: 2.8rem; 
+            letter-spacing: 0.05em;
+            white-space: nowrap; 
+            color: #555; /* 消灯時 */
+            -webkit-text-stroke: 1px #333;
+            filter: none;
+            transition: color 0.1s ease 0.4s, -webkit-text-stroke 0.1s ease 0.4s, filter 0.1s ease 0.4s;
+            transform-origin: center center;
+        }
+        
+        /* 点灯時 */
+        .flip-card-inner.flipped .team-name-text {
+            color: var(--color-text);
+            -webkit-text-stroke: 2px white;
+            filter: drop-shadow(0 0 2px var(--color-glow));
+        }
+
+        /* --- 光るフレーム --- */
+        .back-frame {
+            width: 120%; 
+            height: 95%;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transform-style: preserve-3d;
+            
+            /* 消灯時 */
+            background-color: #222;
+            border: 6px solid #444;
+            box-shadow: none;
+            transition: all 0.1s ease 0.4s;
+        }
+        
+        .flip-card-inner.flipped .back-frame {
+            background-color: #fff;
+            background-image: url("https://www.transparenttextures.com/patterns/cream-paper.png");
+            border-color: white;
+            box-shadow: 
+                0 0 10px var(--color-glow), 
+                0 0 30px var(--color-glow),
+                inset 0 0 10px var(--color-glow);
+            animation: pulse-glow 2s infinite alternate 0.4s;
+        }
+        
+        @keyframes pulse-glow {
+            from { box-shadow: 0 0 10px var(--color-glow), inset 0 0 5px var(--color-glow); }
+            to { box-shadow: 0 0 30px var(--color-glow), inset 0 0 15px var(--color-glow); border-color: #fff; }
+        }
+
+        /* ハイライト */
+        .next-highlight .crown-body,
+        .next-highlight .side-column {
+            filter: brightness(1.5) contrast(1.2);
+            transition: filter 0.2s;
+        }
+        
+        /* 設定画面 */
+        .config-input { background: rgba(255,255,255,0.1); border: 1px solid #444; color: white; padding: 4px; border-radius: 4px; }
+        .color-btn { width: 20px; height: 20px; border-radius: 2px; border: 2px solid transparent; cursor: pointer; transition: transform 0.2s; margin-right: 2px; }
+        .color-btn:hover { transform: scale(1.3); z-index: 10; }
+        .color-btn.selected { border-color: white; box-shadow: 0 0 8px white; transform: scale(1.2); }
+        .scrollable { overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <div id="bg-layer"></div>
+    <canvas id="fire-canvas"></canvas>
+    <div id="root" class="relative z-10 w-full h-full"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback, useMemo, useLayoutEffect } = React;
+
+        // --- 火の粉エフェクト ---
+        const FireParticles = () => {
+            const canvasRef = useRef(null);
+            useEffect(() => {
+                const canvas = document.getElementById('fire-canvas');
+                const ctx = canvas.getContext('2d');
+                let animationFrameId;
+                let particles = [];
+                const resizeCanvas = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+                window.addEventListener('resize', resizeCanvas); resizeCanvas();
+                const createParticle = () => ({ x: Math.random() * canvas.width, y: canvas.height + Math.random() * 100, vx: (Math.random() - 0.5) * 3, vy: -Math.random() * 6 - 2, size: Math.random() * 3 + 1, alpha: 1, color: Math.random() > 0.7 ? '#ffdd88' : '#ff4400' });
+                for (let i = 0; i < 150; i++) particles.push(createParticle());
+                const animate = () => {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.globalCompositeOperation = 'lighter';
+                    particles.forEach((p, index) => {
+                        p.x += p.vx; p.y += p.vy; p.alpha -= 0.01;
+                        if (p.alpha <= 0) particles[index] = createParticle();
+                        ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                        ctx.fillStyle = p.color; ctx.globalAlpha = p.alpha; ctx.fill();
+                    });
+                    animationFrameId = requestAnimationFrame(animate);
+                };
+                animate();
+                return () => { window.removeEventListener('resize', resizeCanvas); cancelAnimationFrame(animationFrameId); };
+            }, []);
+            return null;
+        };
+
+        // --- カラーパレット定義 ---
+        const TEAM_COLORS = [
+            { id: 0, name: "紅", css: { "--color-glow": "#ff0000", "--color-text": "#cc0000" } }, 
+            { id: 1, name: "蒼", css: { "--color-glow": "#0044ff", "--color-text": "#0000cd" } }, 
+            { id: 2, name: "翠", css: { "--color-glow": "#00ff00", "--color-text": "#008000" } }, 
+            { id: 3, name: "紫", css: { "--color-glow": "#aa00ff", "--color-text": "#800080" } }, 
+            { id: 4, name: "橙", css: { "--color-glow": "#ff8800", "--color-text": "#d2691e" } }, 
+            { id: 5, name: "金", css: { "--color-glow": "#ffd700", "--color-text": "#b8860b" } }, 
+            { id: 6, name: "桃", css: { "--color-glow": "#ff0088", "--color-text": "#c71585" } }, 
+            { id: 7, name: "空", css: { "--color-glow": "#00ffff", "--color-text": "#008b8b" } }, 
+            { id: 8, name: "玄", css: { "--color-glow": "#ffffff", "--color-text": "#000000" } }, 
+            { id: 9, name: "銀", css: { "--color-glow": "#ffffff", "--color-text": "#555555" } }, 
+        ];
+
+        // --- 音声生成 (重厚な確定音 - Low Pitch) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const playHeavyImpact = () => {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const t = audioCtx.currentTime;
+            
+            // 1. 重低音 (Sine Wave drop) - Lower frequency
+            const oscLow = audioCtx.createOscillator(); const gainLow = audioCtx.createGain();
+            oscLow.type = 'sine'; 
+            oscLow.frequency.setValueAtTime(60, t); // Lowered from 80
+            oscLow.frequency.exponentialRampToValueAtTime(10, t + 0.8);
+            gainLow.gain.setValueAtTime(1.0, t); gainLow.gain.exponentialRampToValueAtTime(0.01, t + 0.8);
+            oscLow.connect(gainLow); gainLow.connect(audioCtx.destination); oscLow.start(t); oscLow.stop(t + 0.8);
+            
+            // 2. アタック感 (Triangle) - Lower frequency
+            const oscMid = audioCtx.createOscillator(); const gainMid = audioCtx.createGain();
+            oscMid.type = 'triangle'; 
+            oscMid.frequency.setValueAtTime(100, t); // Lowered from 150
+            oscMid.frequency.exponentialRampToValueAtTime(30, t + 0.3); // Lowered ramp target
+            gainMid.gain.setValueAtTime(0.5, t); gainMid.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+            oscMid.connect(gainMid); gainMid.connect(audioCtx.destination); oscMid.start(t); oscMid.stop(t + 0.3);
+            
+            // 3. 衝撃音 (Filtered Noise) - Lower cutoff
+            const bufferSize = audioCtx.sampleRate * 0.5; const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() - 0.5) * 2;
+            const noise = audioCtx.createBufferSource(); noise.buffer = buffer;
+            const noiseGain = audioCtx.createGain(); const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass'; 
+            filter.frequency.value = 400; // Lowered from 600
+            noiseGain.gain.setValueAtTime(0.8, t); noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 0.5);
+            noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(audioCtx.destination); noise.start(t);
+        };
+
+        // --- コンビ名自動調整コンポーネント ---
+        const AutoScaleText = ({ text, teamColor }) => {
+            const containerRef = useRef(null);
+            const textRef = useRef(null);
+            const [scaleY, setScaleY] = useState(1);
+
+            useLayoutEffect(() => {
+                if (containerRef.current && textRef.current) {
+                    const containerHeight = containerRef.current.clientHeight;
+                    const textHeight = textRef.current.scrollHeight;
+                    
+                    if (textHeight > containerHeight) {
+                        setScaleY(containerHeight / textHeight);
+                    } else {
+                        setScaleY(1);
+                    }
+                }
+            }, [text]); 
+
+            return (
+                <div ref={containerRef} className="team-name-container">
+                    <div 
+                        ref={textRef}
+                        className="team-name-text"
+                        style={{ 
+                            '--color-text': teamColor.css['--color-text'],
+                            transform: `scaleY(${scaleY})` 
+                        }}
+                    >
+                        {text}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- 3D PillarPanel ---
+        const PillarPanel = ({ judgeName, voteTeam, isRevealed, isNext, teamColor }) => {
+            return (
+                <div className={`perspective-1000 m-2 ${isNext ? 'next-highlight' : ''}`}>
+                    <div className={`flip-card-inner ${isRevealed ? 'flipped' : ''}`}>
+                        
+                        {/* --- パネル側面（正四角柱） --- */}
+                        <div className="pillar-side side-right"></div>
+                        <div className="pillar-side side-left"></div>
+
+                        {/* 表面 */}
+                        <div className="flip-card-face flip-card-front">
+                            <div className="crown-container">
+                                <div className="crown-gem-main"></div>
+                                <div className="crown-filigree"><div className="crown-wing">⚜</div><div className="crown-wing">⚜</div></div>
+                                <div className="crown-body"></div>
+                            </div>
+                            <div className="pillar-structure">
+                                <div className="side-column col-left"></div><div className="bracket-cap cap-tl"></div><div className="bracket-cap cap-bl"></div>
+                                <div className="black-board h-full"><div className="judge-name">{judgeName}</div></div>
+                                <div className="side-column col-right"></div><div className="bracket-cap cap-tr"></div><div className="bracket-cap cap-br"></div>
+                            </div>
+                            <div className="pillar-base"><div className="wood-block"><div className="base-plate"></div></div></div>
+                        </div>
+
+                        {/* 裏面 */}
+                        <div className="flip-card-face flip-card-back justify-center">
+                             <div className="crown-container">
+                                 <div className="back-gem" style={{ '--gem-color': teamColor.css['--color-glow'] }}></div>
+                                 <div className="crown-filigree"><div className="crown-wing">⚜</div><div className="crown-wing">⚜</div></div>
+                                 <div className="crown-body"></div>
+                             </div>
+
+                             <div className="back-frame" style={{ '--color-glow': teamColor.css['--color-glow'] }}>
+                                <div className="absolute inset-1 border border-dotted opacity-30"></div>
+                                <AutoScaleText text={voteTeam} teamColor={teamColor} />
+                             </div>
+
+                             <div className="pillar-base"><div className="wood-block"><div className="base-plate"></div></div></div>
+                        </div>
+
+                    </div>
+                </div>
+            );
+        };
+
+        // --- メインアプリ ---
+        const App = () => {
+            const [started, setStarted] = useState(false);
+            const [judges, setJudges] = useState([
+                { id: 1, name: "オーディエンス", vote: "令和ロマン" },
+                { id: 2, name: "教職員", vote: "ヤーレンズ" },
+                { id: 3, name: "サンド富澤", vote: "令和ロマン" },
+                { id: 4, name: "中川家礼二", vote: "さや香" },
+                { id: 5, name: "博多大吉", vote: "令和ロマン" },
+                { id: 6, name: "山田邦子", vote: "ヤーレンズ" },
+                { id: 7, name: "ともしげ", vote: "令和ロマン" },
+            ]);
+            const [teamColorMap, setTeamColorMap] = useState({});
+            const [revealedCount, setRevealedCount] = useState(0); 
+            const [isRolling, setIsRolling] = useState(false);
+
+            const uniqueTeams = useMemo(() => {
+                const teams = [];
+                judges.forEach(j => { if (j.vote && j.vote !== "未定" && !teams.includes(j.vote)) teams.push(j.vote); });
+                return teams;
+            }, [judges]);
+
+            useEffect(() => {
+                setTeamColorMap(prev => {
+                    const newMap = { ...prev };
+                    uniqueTeams.forEach((team, index) => { if (newMap[team] === undefined) newMap[team] = index % TEAM_COLORS.length; });
+                    return newMap;
+                });
+            }, [uniqueTeams]);
+
+            const updateTeamColor = (team, colorId) => setTeamColorMap(prev => ({ ...prev, [team]: colorId }));
+            const addJudge = () => setJudges([...judges, { id: judges.length > 0 ? Math.max(...judges.map(j => j.id)) + 1 : 1, name: "審査員", vote: "未定" }]);
+            const removeJudge = (id) => setJudges(judges.filter(j => j.id !== id));
+            const updateJudge = (id, field, value) => setJudges(judges.map(j => j.id === id ? { ...j, [field]: value } : j));
+
+            const handleStart = () => { if (audioCtx.state === 'suspended') audioCtx.resume(); setStarted(true); };
+            const handleReset = useCallback(() => { setStarted(false); setRevealedCount(0); setIsRolling(false); }, []);
+
+            const handleNext = useCallback(() => {
+                if (revealedCount >= judges.length) { handleReset(); return; }
+                if (isRolling) {
+                    playHeavyImpact(); setIsRolling(false); setRevealedCount(prev => prev + 1);
+                } else {
+                    if (audioCtx.state === 'suspended') audioCtx.resume();
+                    setIsRolling(true);
+                }
+            }, [isRolling, revealedCount, judges.length, handleReset]);
+
+            useEffect(() => {
+                if (!started) return;
+                const handleKeyDown = (e) => { if (e.key === 'Enter') { e.preventDefault(); handleNext(); } };
+                window.addEventListener('keydown', handleKeyDown); return () => window.removeEventListener('keydown', handleKeyDown);
+            }, [started, handleNext]);
+
+            if (!started) {
+                return (
+                    <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-900 text-white p-4 overflow-y-auto scrollable">
+                        <FireParticles />
+                        <div className="max-w-3xl w-full bg-black/90 p-6 rounded-xl border border-yellow-700 shadow-2xl my-8 relative z-10 backdrop-blur-sm">
+                            <h1 className="text-3xl font-bold mb-6 text-center text-yellow-500 font-serif" style={{textShadow: "0 0 10px #b8860b"}}>仁川　探究発表会 設定</h1>
+                            <div className="mb-6 space-y-2 max-h-[35vh] overflow-y-auto pr-2">
+                                <div className="grid grid-cols-12 gap-2 text-xs text-gray-400 mb-1 px-2">
+                                    <div className="col-span-1">No.</div><div className="col-span-4">審査員名</div><div className="col-span-5">投票先</div><div className="col-span-2">削除</div>
+                                </div>
+                                {judges.map((judge, idx) => (
+                                    <div key={judge.id} className="grid grid-cols-12 gap-2 items-center bg-gray-900 p-2 rounded border border-gray-800">
+                                        <div className="col-span-1 text-center font-bold text-yellow-600">{idx + 1}</div>
+                                        <div className="col-span-4"><input type="text" value={judge.name} onChange={(e) => updateJudge(judge.id, 'name', e.target.value)} className="w-full config-input" /></div>
+                                        <div className="col-span-5"><input type="text" value={judge.vote} onChange={(e) => updateJudge(judge.id, 'vote', e.target.value)} className="w-full config-input" /></div>
+                                        <div className="col-span-2 text-center"><button onClick={() => removeJudge(judge.id)} className="text-red-400 hover:text-red-200 text-sm font-bold">×</button></div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="flex justify-between items-center border-t border-gray-800 pt-2 mb-4">
+                                <button onClick={addJudge} className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm text-yellow-200 border border-yellow-900">＋ 追加</button>
+                                <div className="text-right text-gray-400 text-sm">現在: {judges.length}名</div>
+                            </div>
+                            {uniqueTeams.length > 0 && (
+                                <div className="mb-6 p-4 bg-gray-900 rounded border border-gray-700">
+                                    <h3 className="text-sm text-yellow-500 font-bold mb-3 border-b border-gray-700 pb-1">▼ チームカラー設定</h3>
+                                    <div className="space-y-3">
+                                        {uniqueTeams.map(team => (
+                                            <div key={team} className="flex items-center justify-between">
+                                                <div className="font-serif text-lg text-white w-1/3 truncate" style={{color: TEAM_COLORS[teamColorMap[team]]?.css['--color-glow'] || 'white'}}>{team}</div>
+                                                <div className="flex gap-1 flex-wrap justify-end w-2/3">
+                                                    {TEAM_COLORS.map((color) => (
+                                                        <div key={color.id} onClick={() => updateTeamColor(team, color.id)} className={`color-btn ${teamColorMap[team] === color.id ? 'selected' : ''}`} style={{ backgroundColor: color.css['--color-glow'] }} title={color.name}></div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            <div className="mt-4 text-center">
+                                <button onClick={handleStart} className="w-full md:w-auto px-12 py-4 bg-gradient-to-r from-yellow-700 to-yellow-500 hover:from-yellow-600 hover:to-yellow-400 text-black font-bold rounded shadow-[0_0_20px_rgba(255,215,0,0.4)] text-xl transition transform hover:scale-105">本番スタート（Enterキーで操作）</button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen flex flex-col items-center justify-center p-2 md:p-8">
+                    <FireParticles />
+                    <div className="flex flex-wrap justify-center items-end gap-3 md:gap-6 mb-20 w-full max-w-7xl relative z-10" style={{perspective: '3000px'}}>
+                        {judges.map((judge, index) => {
+                            const colorId = teamColorMap[judge.vote] ?? 0;
+                            const colorObj = TEAM_COLORS.find(c => c.id === colorId) || TEAM_COLORS[0];
+                            return <PillarPanel key={judge.id} judgeName={judge.name} voteTeam={judge.vote} isRevealed={index < revealedCount} isNext={isRolling && index === revealedCount} teamColor={colorObj} />;
+                        })}
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
