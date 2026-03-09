@@ -357,6 +357,7 @@
             const [teamColorMap, setTeamColorMap] = useState({});
             const [revealedCount, setRevealedCount] = useState(0); 
             const [isRolling, setIsRolling] = useState(false);
+            const [resetCounter, setResetCounter] = useState(0); // エンター連打用カウンター
 
             const uniqueTeams = useMemo(() => {
                 const teams = [];
@@ -378,21 +379,58 @@
             const updateJudge = (id, field, value) => setJudges(judges.map(j => j.id === id ? { ...j, [field]: value } : j));
 
             const handleStart = () => { if (audioCtx.state === 'suspended') audioCtx.resume(); setStarted(true); window.scrollTo(0,0); };
-            const handleReset = useCallback(() => { setStarted(false); setRevealedCount(0); setIsRolling(false); }, []);
+            
+            const handleReset = useCallback(() => { 
+                setStarted(false); 
+                setRevealedCount(0); 
+                setIsRolling(false); 
+                setResetCounter(0);
+            }, []);
 
             const handleNext = useCallback(() => {
-                if (revealedCount >= judges.length) { handleReset(); return; }
-                if (isRolling) { playHeavyImpact(); setIsRolling(false); setRevealedCount(prev => prev + 1); }
-                else { if (audioCtx.state === 'suspended') audioCtx.resume(); setIsRolling(true); }
+                // すべてのパネルが表示済みの場合
+                if (revealedCount >= judges.length) {
+                    setResetCounter(prev => {
+                        const nextCount = prev + 1;
+                        if (nextCount >= 3) {
+                            handleReset();
+                            return 0;
+                        }
+                        return nextCount;
+                    });
+                    return;
+                }
+
+                // 発表中のロジック
+                if (isRolling) { 
+                    playHeavyImpact(); 
+                    setIsRolling(false); 
+                    setRevealedCount(prev => prev + 1); 
+                }
+                else { 
+                    if (audioCtx.state === 'suspended') audioCtx.resume(); 
+                    setIsRolling(true); 
+                }
             }, [isRolling, revealedCount, judges.length, handleReset]);
 
             useEffect(() => {
                 if (!started) return;
-                const handleKeyDown = (e) => { if (e.key === 'Enter') { e.preventDefault(); handleNext(); } };
-                const handleClick = (e) => { if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return; handleNext(); };
+                const handleKeyDown = (e) => { 
+                    if (e.key === 'Enter') { 
+                        e.preventDefault(); 
+                        handleNext(); 
+                    } 
+                };
+                const handleClick = (e) => { 
+                    if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return; 
+                    handleNext(); 
+                };
                 window.addEventListener('keydown', handleKeyDown);
                 window.addEventListener('click', handleClick);
-                return () => { window.removeEventListener('keydown', handleKeyDown); window.removeEventListener('click', handleClick); };
+                return () => { 
+                    window.removeEventListener('keydown', handleKeyDown); 
+                    window.removeEventListener('click', handleClick); 
+                };
             }, [started, handleNext]);
 
             if (!started) {
@@ -444,7 +482,7 @@
             }
 
             return (
-                <div className="min-h-screen flex flex-col items-center justify-center p-2 md:p-8">
+                <div className="min-h-screen flex flex-col items-center justify-center p-2 md:p-8 relative">
                     <FireParticles />
                     <div className="flex flex-wrap justify-center items-end gap-3 md:gap-6 mb-20 w-full max-w-7xl relative z-10" style={{perspective: '3000px'}}>
                         {judges.map((judge, index) => (
